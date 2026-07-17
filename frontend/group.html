@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Group — Housing Processor</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div id="site-nav"></div>
+    <div class="page page-wide">
+      <header class="page-header">
+        <p class="breadcrumb"><a href="/groups.html">Groups</a></p>
+        <h1 id="group-title">Group</h1>
+        <p id="group-meta" class="hint"></p>
+      </header>
+
+      <section class="panel">
+        <p id="group-error" class="message error" hidden></p>
+        <p id="group-empty" class="empty-state" hidden></p>
+        <div class="table-wrap">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Contact</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Joined</th>
+              </tr>
+            </thead>
+            <tbody id="members-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <script src="/js/group-detail-page.js" type="module"></script>
+  </body>
+</html>

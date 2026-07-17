@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+dist/
+build/
+.venv/
+venv/
+
+# Environment and secrets
+.env
+*.pem
+
+# Local data and storage
+data/
+*.db
+*.sqlite3
+
+# IDE / tooling
+.idea/
+.vscode/
+.ruff_cache/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Exports and uploads (local)
+*.xlsx
+!tests/fixtures/**

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Applications — Housing Processor</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div id="site-nav"></div>
+    <div class="page page-wide">
+      <header class="page-header">
+        <h1>Applications</h1>
+        <p class="hint">Uploaded DOCX intake records.</p>
+      </header>
+
+      <section class="panel">
+        <p id="apps-meta" class="table-meta"></p>
+        <p id="apps-error" class="message error" hidden></p>
+        <p id="apps-empty" class="empty-state" hidden>
+          No applications yet. Upload a DOCX from the Dashboard.
+        </p>
+        <div class="table-wrap">
+          <table class="crm-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Filename</th>
+                <th>Status</th>
+                <th>Received</th>
+              </tr>
+            </thead>
+            <tbody id="apps-body"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+    <script src="/js/applications-page.js" type="module"></script>
+  </body>
+</html>

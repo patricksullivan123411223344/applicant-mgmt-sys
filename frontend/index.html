@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Dashboard — Housing Processor</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div id="site-nav"></div>
+    <div class="page">
+      <header class="page-header">
+        <h1>Dashboard</h1>
+        <p class="tagline">Ingest DOCX applications into structured group records</p>
+      </header>
+
+      <main>
+        <section class="panel" aria-labelledby="status-heading">
+          <h2 id="status-heading">System status</h2>
+          <dl class="status-grid">
+            <div>
+              <dt>Live</dt>
+              <dd id="status-live" class="status-pill pending">checking…</dd>
+            </div>
+            <div>
+              <dt>Ready</dt>
+              <dd id="status-ready" class="status-pill pending">checking…</dd>
+            </div>
+            <div>
+              <dt>API version</dt>
+              <dd id="status-version">—</dd>
+            </div>
+          </dl>
+          <p id="status-error" class="message error" hidden></p>
+        </section>
+
+        <section class="panel" aria-labelledby="upload-heading">
+          <h2 id="upload-heading">Upload application</h2>
+          <p class="hint">Accepts Microsoft Word <code>.docx</code> housing applications.</p>
+          <form id="upload-form" class="upload-form">
+            <label class="file-label">
+              <span>Document</span>
+              <input
+                id="file-input"
+                name="file"
+                type="file"
+                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                required
+              />
+            </label>
+            <button type="submit" id="upload-button">Upload</button>
+          </form>
+          <p id="upload-message" class="message" hidden></p>
+          <pre id="upload-result" class="result-block" hidden></pre>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <p>Database is the source of truth. Excel is a generated projection.</p>
+      </footer>
+    </div>
+
+    <script src="/js/app.js" type="module"></script>
+  </body>
+</html>
