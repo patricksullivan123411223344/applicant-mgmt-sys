@@ -14,9 +14,13 @@ from housing_processor.presentation.api.contracts.groups import (
     GroupSummaryResponse,
     SetGroupContactRequest,
 )
-from housing_processor.presentation.api.dependencies import get_app_container
+from housing_processor.presentation.api.dependencies import get_actor_context, get_app_container
 
-router = APIRouter(prefix="/groups", tags=["groups"])
+router = APIRouter(
+    prefix="/groups",
+    tags=["groups"],
+    dependencies=[Depends(get_actor_context)],
+)
 
 
 def _summary_from_group(group) -> GroupSummaryResponse:  # type: ignore[no-untyped-def]

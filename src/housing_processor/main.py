@@ -20,6 +20,7 @@ from housing_processor.presentation.api.routes import (
     exports,
     groups,
     reviews,
+    system,
 )
 
 logger = get_logger(__name__)
@@ -88,10 +89,7 @@ def create_app() -> FastAPI:
             )
         return JSONResponse(content={"status": "ready"})
 
-    @app.get("/api/v1/system/version")
-    def system_version() -> dict[str, str]:
-        return {"version": __version__}
-
+    app.include_router(system.router, prefix="/api/v1")
     app.include_router(applications.router, prefix="/api/v1")
     app.include_router(applicants.router, prefix="/api/v1")
     app.include_router(groups.router, prefix="/api/v1")

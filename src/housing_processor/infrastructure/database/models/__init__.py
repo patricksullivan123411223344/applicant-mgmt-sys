@@ -16,6 +16,7 @@ from housing_processor.infrastructure.database.models.properties import (
     PropertyModel,
 )
 from housing_processor.infrastructure.database.models.reviews import ReviewItemModel
+from housing_processor.infrastructure.database.models.staff import StaffProfileModel
 
 __all__ = [
     "ApplicantModel",
@@ -30,4 +31,5 @@ __all__ = [
     "PendingRoommateReferenceModel",
     "PropertyModel",
     "ReviewItemModel",
+    "StaffProfileModel",
 ]

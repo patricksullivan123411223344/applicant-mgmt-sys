@@ -11,7 +11,11 @@ from housing_processor.presentation.api.contracts.exports import (
 )
 from housing_processor.presentation.api.dependencies import get_actor_context, get_app_container
 
-router = APIRouter(prefix="/exports", tags=["exports"])
+router = APIRouter(
+    prefix="/exports",
+    tags=["exports"],
+    dependencies=[Depends(get_actor_context)],
+)
 
 
 @router.post(

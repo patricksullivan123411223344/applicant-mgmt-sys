@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in — Housing Processor</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body class="login-body">
+    <div class="login-shell">
+      <header class="login-header">
+        <p class="login-brand">Housing Processor</p>
+        <h1 id="auth-title">Staff sign in</h1>
+        <p class="tagline" id="auth-tagline">
+          Sign in with your email and password to use the operations API.
+        </p>
+      </header>
+
+      <main class="panel login-panel">
+        <form id="login-form" class="login-form" novalidate>
+          <label>
+            <span>Email</span>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              autocomplete="username"
+              required
+            />
+          </label>
+          <label>
+            <span>Password</span>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required
+            />
+          </label>
+          <button type="submit" id="login-button">Sign in</button>
+        </form>
+        <p class="auth-switch">
+          <button type="button" class="auth-switch-btn" id="auth-mode-toggle">
+            Need an account? Sign up
+          </button>
+        </p>
+        <p id="login-message" class="message error" hidden></p>
+        <p id="login-info" class="message success" hidden></p>
+      </main>
+    </div>
+    <script src="/js/login-page.js" type="module"></script>
+  </body>
+</html>

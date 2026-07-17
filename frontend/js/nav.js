@@ -1,7 +1,9 @@
+import { getCurrentUserEmail, isAuthDisabled, loginUrl, signOut } from "./auth.js";
+
 /**
  * Injects CRM navbar + group-number search into #site-nav.
  */
-export function mountNav(activePage = "") {
+export async function mountNav(activePage = "") {
   const host = document.getElementById("site-nav");
   if (!host) {
     return;
@@ -12,6 +14,32 @@ export function mountNav(activePage = "") {
     { href: "/groups.html", id: "groups", label: "Groups" },
     { href: "/applications.html", id: "applications", label: "Applications" },
   ];
+
+  const authDisabled = await isAuthDisabled();
+  let email = "";
+  try {
+    email = (await getCurrentUserEmail()) || "";
+  } catch {
+    email = "";
+  }
+
+  const next = `${window.location.pathname}${window.location.search}`;
+  // AUTH_DISABLED shows local-dev without login CTAs. No session → Log in / Sign up.
+  const showAuthCtas = !authDisabled && !email;
+
+  const userBlock = showAuthCtas
+    ? `
+      <div class="crm-user crm-auth-ctas">
+        <a class="crm-auth-link" href="${loginUrl({ mode: "signin", next })}">Log in</a>
+        <a class="crm-auth-link crm-auth-link-primary" href="${loginUrl({ mode: "signup", next })}">Sign up</a>
+      </div>
+    `
+    : `
+      <div class="crm-user">
+        ${email ? `<span class="crm-user-email" title="${email}">${email}</span>` : ""}
+        ${authDisabled ? "" : `<button type="button" class="crm-logout" id="nav-logout">Log out</button>`}
+      </div>
+    `;
 
   host.innerHTML = `
     <div class="crm-nav">
@@ -37,6 +65,7 @@ export function mountNav(activePage = "") {
         />
         <button type="submit">Go</button>
       </form>
+      ${userBlock}
     </div>
   `;
 
@@ -50,5 +79,9 @@ export function mountNav(activePage = "") {
       return;
     }
     window.location.href = `/group.html?number=${encodeURIComponent(value)}`;
+  });
+
+  document.getElementById("nav-logout")?.addEventListener("click", () => {
+    void signOut();
   });
 }

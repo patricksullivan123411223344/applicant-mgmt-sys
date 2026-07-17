@@ -35,5 +35,5 @@ Thumbs.db
 *.xlsx
 !tests/fixtures/**
 
-# Documentation
-*cursor-docs/*
+# Cursor documentation (local only)
+cursor-docs/

@@ -15,7 +15,11 @@ class Settings(BaseSettings):
     environment: str = "local"
     database_url: SecretStr = SecretStr("sqlite:///./data/housing_processor.db")
     supabase_url: str | None = None
+    supabase_anon_key: SecretStr | None = None
     supabase_service_role_key: SecretStr | None = None
+    supabase_jwt_secret: SecretStr | None = None
+    # Only honored when ENVIRONMENT=local and DATABASE_URL is SQLite.
+    auth_disabled: bool = False
     storage_backend: str = "local"
     storage_root: Path | None = Path("./data/storage")
     llm_enabled: bool = False

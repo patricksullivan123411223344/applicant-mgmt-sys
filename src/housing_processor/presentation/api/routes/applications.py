@@ -16,7 +16,11 @@ from housing_processor.presentation.api.contracts.applications import (
 from housing_processor.presentation.api.contracts.common import PageMeta, PaginatedResponse
 from housing_processor.presentation.api.dependencies import get_actor_context, get_app_container
 
-router = APIRouter(prefix="/applications", tags=["applications"])
+router = APIRouter(
+    prefix="/applications",
+    tags=["applications"],
+    dependencies=[Depends(get_actor_context)],
+)
 
 
 @router.post(

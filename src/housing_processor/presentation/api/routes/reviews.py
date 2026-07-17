@@ -5,9 +5,13 @@ from fastapi import APIRouter, Depends, status
 from housing_processor.bootstrap import AppContainer
 from housing_processor.presentation.api.contracts.common import PageMeta, PaginatedResponse
 from housing_processor.presentation.api.contracts.reviews import ResolveReviewRequest
-from housing_processor.presentation.api.dependencies import get_app_container
+from housing_processor.presentation.api.dependencies import get_actor_context, get_app_container
 
-router = APIRouter(prefix="/reviews", tags=["reviews"])
+router = APIRouter(
+    prefix="/reviews",
+    tags=["reviews"],
+    dependencies=[Depends(get_actor_context)],
+)
 
 
 @router.get("")
