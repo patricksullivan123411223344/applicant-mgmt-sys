@@ -34,3 +34,6 @@ Thumbs.db
 # Exports and uploads (local)
 *.xlsx
 !tests/fixtures/**
+
+# Documentation
+*cursor-docs/*
