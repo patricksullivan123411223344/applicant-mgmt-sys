@@ -5,10 +5,11 @@ from fastapi import APIRouter, Depends, status
 from housing_processor.bootstrap import AppContainer
 from housing_processor.domain.shared.enums import GroupStatus
 from housing_processor.domain.shared.errors import ResourceNotFoundError
-from housing_processor.domain.shared.identifiers import GroupId
+from housing_processor.domain.shared.identifiers import ApplicantId, ApplicationId, GroupId
 from housing_processor.presentation.api.contracts.common import PageMeta, PaginatedResponse
 from housing_processor.presentation.api.contracts.groups import (
     AddGroupMemberRequest,
+    CreateGroupRequest,
     GroupDetailResponse,
     GroupMemberResponse,
     GroupSummaryResponse,
@@ -107,18 +108,51 @@ def get_group(
         return _detail_from_group(group, uow)
 
 
-@router.post("", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def create_group() -> dict[str, str]:
-    return {"detail": "Manual group creation is not implemented in Phase 1 scaffold."}
+@router.post("", response_model=GroupDetailResponse, status_code=status.HTTP_201_CREATED)
+def create_group(
+    body: CreateGroupRequest,
+    container: AppContainer = Depends(get_app_container),
+) -> GroupDetailResponse:
+    group = container.create_group_handler.handle(
+        applicant_id=ApplicantId(body.applicant_id),
+        source_application_id=ApplicationId(body.source_application_id),
+        make_contact=body.make_contact,
+    )
+    with container.uow_factory() as uow:
+        fresh = uow.groups.get(group.id)
+        return _detail_from_group(fresh, uow)
 
 
-@router.post("/{group_id}/members", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def add_member(group_id: UUID, body: AddGroupMemberRequest) -> dict[str, str]:
-    _ = group_id, body
-    return {"detail": "Add group member is not implemented in Phase 1 scaffold."}
+@router.post("/{group_id}/members", response_model=GroupDetailResponse)
+def add_member(
+    group_id: UUID,
+    body: AddGroupMemberRequest,
+    container: AppContainer = Depends(get_app_container),
+) -> GroupDetailResponse:
+    group = container.add_group_member_handler.handle(
+        group_id=GroupId(group_id),
+        applicant_id=ApplicantId(body.applicant_id),
+        source_application_id=(
+            ApplicationId(body.source_application_id) if body.source_application_id else None
+        ),
+        expected_group_version=body.expected_group_version,
+    )
+    with container.uow_factory() as uow:
+        fresh = uow.groups.get(group.id)
+        return _detail_from_group(fresh, uow)
 
 
-@router.put("/{group_id}/contact", status_code=status.HTTP_501_NOT_IMPLEMENTED)
-def set_contact(group_id: UUID, body: SetGroupContactRequest) -> dict[str, str]:
-    _ = group_id, body
-    return {"detail": "Set group contact is not implemented in Phase 1 scaffold."}
+@router.put("/{group_id}/contact", response_model=GroupDetailResponse)
+def set_contact(
+    group_id: UUID,
+    body: SetGroupContactRequest,
+    container: AppContainer = Depends(get_app_container),
+) -> GroupDetailResponse:
+    group = container.set_group_contact_handler.handle(
+        group_id=GroupId(group_id),
+        contact_applicant_id=ApplicantId(body.contact_applicant_id),
+        expected_group_version=body.expected_group_version,
+    )
+    with container.uow_factory() as uow:
+        fresh = uow.groups.get(group.id)
+        return _detail_from_group(fresh, uow)

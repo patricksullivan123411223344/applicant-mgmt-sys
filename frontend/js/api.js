@@ -64,11 +64,14 @@ async function requestJson(path, { auth = true, method = "GET", body, retry = tr
     headers = authResult.headers;
     hadToken = authResult.hadToken;
   }
+  if (body != null && !(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
 
   const response = await fetch(`${API_BASE}${path}`, {
     method,
     headers,
-    body,
+    body: body != null && !(body instanceof FormData) ? JSON.stringify(body) : body,
   });
 
   if (response.status === 401 && auth && hadToken && retry) {
@@ -83,7 +86,11 @@ async function requestJson(path, { auth = true, method = "GET", body, retry = tr
   if (!response.ok) {
     throw new ApiError(await parseError(response), response.status, { hadToken });
   }
-  return response.json();
+  if (response.status === 204) {
+    return null;
+  }
+  const text = await response.text();
+  return text ? JSON.parse(text) : null;
 }
 
 export function fetchLive() {
@@ -137,6 +144,31 @@ export async function listApplications({ limit = 50, offset = 0, status } = {}) 
   return requestJson(`/api/v1/applications?${params}`);
 }
 
+export function getApplication(applicationId) {
+  return requestJson(`/api/v1/applications/${applicationId}`);
+}
+
+export function reprocessApplication(applicationId, reason = "manual_reprocess") {
+  return requestJson(`/api/v1/applications/${applicationId}/reprocess`, {
+    method: "POST",
+    body: {
+      expected_version: 1,
+      reason,
+    },
+  });
+}
+
+export function upsertApplicant(applicationId, payload) {
+  return requestJson(`/api/v1/applications/${applicationId}/applicant`, {
+    method: "PUT",
+    body: payload,
+  });
+}
+
+export function deleteApplicant(applicantId) {
+  return requestJson(`/api/v1/applicants/${applicantId}`, { method: "DELETE" });
+}
+
 export async function listGroups({ limit = 50, offset = 0, groupNumber, status } = {}) {
   const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
   if (groupNumber != null && groupNumber !== "") {
@@ -154,4 +186,27 @@ export function getGroup(groupId) {
 
 export function getGroupByNumber(groupNumber) {
   return requestJson(`/api/v1/groups/by-number/${groupNumber}`);
+}
+
+export function createGroup(payload) {
+  return requestJson(`/api/v1/groups`, { method: "POST", body: payload });
+}
+
+export function addGroupMember(groupId, payload) {
+  return requestJson(`/api/v1/groups/${groupId}/members`, { method: "POST", body: payload });
+}
+
+export function setGroupContact(groupId, payload) {
+  return requestJson(`/api/v1/groups/${groupId}/contact`, { method: "PUT", body: payload });
+}
+
+export function createExcelExport() {
+  return requestJson(`/api/v1/exports/excel`, {
+    method: "POST",
+    body: {},
+  });
+}
+
+export function exportDownloadUrl(exportId) {
+  return `${API_BASE}/api/v1/exports/${exportId}/download`;
 }

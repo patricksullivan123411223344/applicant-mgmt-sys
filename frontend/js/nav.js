@@ -13,6 +13,7 @@ export async function mountNav(activePage = "") {
     { href: "/", id: "dashboard", label: "Dashboard" },
     { href: "/groups.html", id: "groups", label: "Groups" },
     { href: "/applications.html", id: "applications", label: "Applications" },
+    { href: "/exports.html", id: "exports", label: "Exports" },
   ];
 
   const authDisabled = await isAuthDisabled();

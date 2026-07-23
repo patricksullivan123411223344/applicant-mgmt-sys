@@ -4,9 +4,9 @@ Internal operations platform that converts student housing `.docx` applications 
 
 The **database is the source of truth**. Word documents are immutable inputs; Excel workbooks are generated projections. Deterministic Python logic owns validation, group numbering, and writes. An LLM may assist extraction later but never writes to the database or allocates group numbers.
 
-Architecture and scope: see [`cursor-docs/PROJECT_OVERVIEW.md`](cursor-docs/PROJECT_OVERVIEW.md) and [`cursor-docs/SYSTEM_ARCHITECTURE.md`](cursor-docs/SYSTEM_ARCHITECTURE.md).
+**Plain-English master overview (for everyone):** [`MASTER_OVERVIEW.md`](MASTER_OVERVIEW.md).
 
-**What’s built vs what’s left:** [`cursor-docs/CURRENT_STATUS.md`](cursor-docs/CURRENT_STATUS.md).
+Architecture and scope (local builder notes): `cursor-docs/PROJECT_OVERVIEW.md`, `cursor-docs/SYSTEM_ARCHITECTURE.md`, `cursor-docs/CURRENT_STATUS.md`.
 
 ## Phase 1 (current)
 

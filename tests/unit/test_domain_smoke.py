@@ -77,4 +77,6 @@ def test_application_status_transitions() -> None:
     assert can_transition(ApplicationStatus.RECEIVED, ApplicationStatus.DUPLICATE)
     assert not can_transition(ApplicationStatus.RECEIVED, ApplicationStatus.MATCHED)
     assert can_transition(ApplicationStatus.REVIEW_REQUIRED, ApplicationStatus.MATCHED)
+    assert can_transition(ApplicationStatus.REVIEW_REQUIRED, ApplicationStatus.EXTRACTING)
+    assert can_transition(ApplicationStatus.MATCHED, ApplicationStatus.EXTRACTING)
     assert can_transition(ApplicationStatus.FAILED, ApplicationStatus.EXTRACTING)

@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
 from housing_processor.domain.shared.errors import (
+    ApplicantInGroupError,
     ContactMustBeGroupMemberError,
     DomainError,
     DuplicateGroupMemberError,
@@ -16,6 +17,7 @@ _STATUS_BY_ERROR: dict[type[DomainError], int] = {
     VersionConflictError: 409,
     InvalidStatusTransitionError: 409,
     DuplicateGroupMemberError: 409,
+    ApplicantInGroupError: 409,
     ContactMustBeGroupMemberError: 422,
 }
 

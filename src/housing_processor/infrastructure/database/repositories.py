@@ -76,6 +76,10 @@ class SqlAlchemyApplicationRepository:
         models = list(self._session.scalars(list_stmt.limit(limit).offset(offset)).all())
         return tuple(application_to_domain(m) for m in models), total
 
+    def find_with_warning_containing(self, needle: str) -> tuple[ApplicationRecord, ...]:
+        stmt = select(ApplicationModel).where(ApplicationModel.warnings_json.contains(needle))
+        return tuple(application_to_domain(m) for m in self._session.scalars(stmt).all())
+
     def add(self, application: ApplicationRecord) -> None:
         self._session.add(application_to_model(application))
 
@@ -85,6 +89,37 @@ class SqlAlchemyApplicationRepository:
             self.add(application)
             return
         application_to_model(application, existing=existing)
+
+    def delete(self, application_id: ApplicationId) -> None:
+        from housing_processor.infrastructure.database.models.pending_roommates import (
+            PendingRoommateReferenceModel,
+        )
+        from housing_processor.infrastructure.database.models.reviews import ReviewItemModel
+
+        app_uuid = UUID(str(application_id))
+        model = self._session.get(ApplicationModel, app_uuid)
+        if model is None:
+            raise ResourceNotFoundError(
+                f"Application {application_id} was not found.",
+                context={"application_id": str(application_id)},
+            )
+
+        # Dependents that reference applications (pending has a real FK).
+        self._session.execute(
+            PendingRoommateReferenceModel.__table__.delete().where(
+                PendingRoommateReferenceModel.source_application_id == app_uuid
+            )
+        )
+        self._session.execute(
+            ReviewItemModel.__table__.delete().where(ReviewItemModel.application_id == app_uuid)
+        )
+        # Clear duplicate pointers at this application.
+        self._session.execute(
+            update(ApplicationModel)
+            .where(ApplicationModel.duplicate_of_application_id == app_uuid)
+            .values(duplicate_of_application_id=None)
+        )
+        self._session.delete(model)
 
 
 class SqlAlchemyApplicantRepository:
@@ -146,6 +181,37 @@ class SqlAlchemyApplicantRepository:
         model.gpa = applicant.gpa
         model.version = applicant.version
         model.updated_at = datetime.now(timezone.utc)
+
+    def delete(self, applicant_id: ApplicantId) -> None:
+        model = self._session.get(ApplicantModel, UUID(str(applicant_id)))
+        if model is None:
+            raise ResourceNotFoundError(
+                f"Applicant {applicant_id} was not found.",
+                context={"applicant_id": str(applicant_id)},
+            )
+        self._session.delete(model)
+
+    def is_group_member(self, applicant_id: ApplicantId) -> bool:
+        stmt = (
+            select(func.count())
+            .select_from(GroupMemberModel)
+            .where(GroupMemberModel.applicant_id == UUID(str(applicant_id)))
+        )
+        return int(self._session.scalar(stmt) or 0) > 0
+
+    def clear_pending_roommate_resolutions(self, applicant_id: ApplicantId) -> None:
+        from housing_processor.infrastructure.database.models.pending_roommates import (
+            PendingRoommateReferenceModel,
+        )
+
+        self._session.execute(
+            update(PendingRoommateReferenceModel)
+            .where(
+                PendingRoommateReferenceModel.resolved_applicant_id
+                == UUID(str(applicant_id))
+            )
+            .values(resolved_applicant_id=None)
+        )
 
 
 class SqlAlchemyGroupRepository:
@@ -223,6 +289,8 @@ class SqlAlchemyGroupRepository:
                 updated_at=now,
             )
         )
+        # Ensure the parent row exists before FK inserts into group_members.
+        self._session.flush()
         for member in group.members:
             self._session.add(
                 GroupMemberModel(
@@ -245,6 +313,49 @@ class SqlAlchemyGroupRepository:
         model.status = group.status.value
         model.version = group.version
         model.updated_at = datetime.now(timezone.utc)
+        existing = {
+            m.applicant_id
+            for m in self._session.scalars(
+                select(GroupMemberModel).where(GroupMemberModel.group_id == model.id)
+            ).all()
+        }
+        for member in group.members:
+            applicant_uuid = UUID(str(member.applicant_id))
+            if applicant_uuid in existing:
+                row = self._session.scalars(
+                    select(GroupMemberModel).where(
+                        GroupMemberModel.group_id == model.id,
+                        GroupMemberModel.applicant_id == applicant_uuid,
+                    )
+                ).first()
+                if row is not None:
+                    row.is_contact = member.is_contact
+                continue
+            self._session.add(
+                GroupMemberModel(
+                    id=uuid4(),
+                    group_id=model.id,
+                    applicant_id=applicant_uuid,
+                    is_contact=member.is_contact,
+                    match_method=member.match_method.value,
+                    match_confidence=member.match_confidence.value,
+                    source_application_id=UUID(str(member.source_application_id)),
+                    joined_at=member.joined_at,
+                )
+            )
+        # Sync contact flags for existing members
+        for member in group.members:
+            applicant_uuid = UUID(str(member.applicant_id))
+            if applicant_uuid not in existing:
+                continue
+            row = self._session.scalars(
+                select(GroupMemberModel).where(
+                    GroupMemberModel.group_id == model.id,
+                    GroupMemberModel.applicant_id == applicant_uuid,
+                )
+            ).first()
+            if row is not None:
+                row.is_contact = member.is_contact
 
     def allocate_group_number(self) -> int:
         """Atomically allocate the next permanent group number."""

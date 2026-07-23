@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Application — Housing Processor</title>
+    <link rel="stylesheet" href="/css/styles.css" />
+  </head>
+  <body>
+    <div id="site-nav"></div>
+    <div class="page page-wide">
+      <p class="breadcrumb"><a href="/applications.html">Applications</a> / Detail</p>
+      <header class="page-header">
+        <h1 id="app-title">Application</h1>
+        <p id="app-meta" class="hint"></p>
+      </header>
+
+      <p id="app-error" class="message error" hidden></p>
+      <p id="app-message" class="message success" hidden></p>
+
+      <section class="panel" aria-labelledby="process-heading">
+        <h2 id="process-heading">Process</h2>
+        <p class="hint">Extract fields from the Word form and create an applicant + review item.</p>
+        <button type="button" id="process-button">Process / reprocess</button>
+      </section>
+
+      <section class="panel" aria-labelledby="applicant-heading">
+        <h2 id="applicant-heading">Applicant</h2>
+        <form id="applicant-form" class="login-form">
+          <input type="hidden" id="applicant-id" />
+          <input type="hidden" id="app-version" />
+          <label>
+            <span>Full name</span>
+            <input id="full-name" required />
+          </label>
+          <label>
+            <span>Email</span>
+            <input id="email" type="text" placeholder="N/A" />
+          </label>
+          <label>
+            <span>Phone</span>
+            <input id="phone" type="text" placeholder="N/A" />
+          </label>
+          <label>
+            <span>GPA</span>
+            <input id="gpa" type="text" placeholder="N/A" />
+          </label>
+          <button type="submit">Save applicant</button>
+          <button type="button" id="delete-applicant-button" hidden>
+            Delete applicant
+          </button>
+        </form>
+      </section>
+
+      <section class="panel" aria-labelledby="extracted-heading">
+        <h2 id="extracted-heading">Extracted from form</h2>
+        <dl id="extracted-summary" class="hint">
+          <div><dt>Contact person</dt><dd id="extracted-contact">—</dd></div>
+          <div><dt>Roommates</dt><dd id="extracted-roommates">—</dd></div>
+          <div><dt>Property choices</dt><dd id="extracted-choices">—</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-labelledby="group-heading">
+        <h2 id="group-heading">Group</h2>
+        <p id="group-status" class="hint"></p>
+        <p id="pending-roommates" class="hint"></p>
+        <button type="button" id="create-group-button">Create new group with this applicant</button>
+        <form id="attach-form" class="login-form" style="margin-top: 1rem">
+          <label>
+            <span>Attach to existing group number</span>
+            <input id="attach-group-number" type="number" min="1" required />
+          </label>
+          <button type="submit">Attach to group</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Warnings</h2>
+        <pre id="app-warnings" class="result-block"></pre>
+      </section>
+    </div>
+    <script src="/js/application-detail-page.js" type="module"></script>
+  </body>
+</html>

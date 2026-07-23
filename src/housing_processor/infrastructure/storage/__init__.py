@@ -31,3 +31,8 @@ class LocalFileStorage:
 
     def resolve_path(self, storage_key: str) -> Path:
         return self._root / storage_key
+
+    def delete(self, storage_key: str) -> None:
+        path = self._root / storage_key
+        if path.is_file():
+            path.unlink()

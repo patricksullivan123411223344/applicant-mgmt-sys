@@ -1,13 +1,15 @@
-"""Process-application orchestrator (architecture §20).
-
-Phase 1 scaffold: coordinates collaborators; persistence of match/review
-decisions is completed in later Phase 1 slices.
-"""
+"""Process-application orchestrator (architecture §20)."""
 
 from __future__ import annotations
 
+from uuid import UUID, uuid4
+
 from housing_processor.application.commands.process import ProcessApplicationCommand
 from housing_processor.application.dto.processing import ProcessApplicationResult
+from housing_processor.application.extraction_snapshot import (
+    build_extracted_v1_snapshot,
+    replace_extracted_v1_warning,
+)
 from housing_processor.application.ports.extractors import (
     ApplicationValidator,
     DeterministicParser,
@@ -18,8 +20,12 @@ from housing_processor.application.ports.matching import ApplicantIdentityResolv
 from housing_processor.application.ports.repositories import GroupCandidateQuery, UnitOfWorkFactory
 from housing_processor.application.ports.storage import FileStorage
 from housing_processor.application.ports.support import Clock
+from housing_processor.domain.applicants.entities import Applicant
 from housing_processor.domain.applications.status_transitions import assert_can_transition
-from housing_processor.domain.shared.enums import ApplicationStatus, MatchDecisionType
+from housing_processor.domain.reviews.entities import ReviewItem
+from housing_processor.domain.shared.enums import ApplicationStatus, MatchDecisionType, ReviewStatus
+from housing_processor.domain.shared.identifiers import ApplicantId, ReviewItemId
+from housing_processor.infrastructure.docx import PARSER_VERSION
 
 
 class ProcessApplicationHandler:
@@ -46,7 +52,6 @@ class ProcessApplicationHandler:
         self._clock = clock
 
     def handle(self, command: ProcessApplicationCommand) -> ProcessApplicationResult:
-        # 1. Load the application and verify its current state.
         with self._uow_factory() as uow:
             application = uow.applications.get(command.application_id)
 
@@ -62,18 +67,15 @@ class ProcessApplicationHandler:
             uow.commit()
             storage_key = application.storage_key
             application_id = application.id
+            original_filename = application.original_filename
 
-        # 2. Read the immutable source document.
         source_path = self._storage.resolve_path(storage_key)
         document = self._document_reader.read(source_path)
+        document.source_filename = original_filename
 
-        # 3. Run deterministic extraction.
         deterministic_result = self._deterministic_parser.parse(document)
-
-        # 4. Optionally run structured LLM extraction (pass-through in Phase 1).
         extracted = self._structured_extractor.extract(document, deterministic_result)
 
-        # 5. Validate and normalize the extracted contract.
         try:
             validated = self._validator.validate(extracted)
         except Exception:
@@ -93,6 +95,12 @@ class ProcessApplicationHandler:
                 ApplicationStatus.EXTRACTED,
             )
             application.status = ApplicationStatus.EXTRACTED
+            application.parser_version = PARSER_VERSION
+            warnings = list(application.warnings)
+            warnings.extend(extracted.warnings)
+            for issue in validated.issues:
+                warnings.append(f"{issue.code}: {issue.message}")
+            application.warnings = warnings
             uow.applications.save(application)
 
             assert_can_transition(
@@ -104,19 +112,85 @@ class ProcessApplicationHandler:
             uow.applications.save(application)
             uow.commit()
 
-        # 6–8. Load candidates, decide, commit review or match.
         with self._uow_factory() as uow:
             resolution = self._identity_resolver.resolve(validated.applicant)
             candidates = uow.groups.find_candidates(GroupCandidateQuery())
             decision = self._group_matcher.match(validated, resolution, candidates)
 
             application = uow.applications.get(application_id)
-            warnings: list[str] = list(application.warnings)
+            warnings = list(application.warnings)
+            now = self._clock.now()
 
-            # Phase 1: automatic matching surfaces review until manual path lands.
+            applicant_id = resolution.applicant_id
+            if applicant_id is None:
+                for warning in warnings:
+                    if warning.startswith("applicant.upserted:"):
+                        try:
+                            applicant_id = ApplicantId(UUID(warning.split(":", 1)[1]))
+                            break
+                        except Exception:
+                            continue
+
+            if applicant_id is not None:
+                try:
+                    existing = uow.applicants.get(applicant_id)
+                    existing.name = validated.applicant.name
+                    existing.email = validated.applicant.email
+                    existing.phone = validated.applicant.phone
+                    existing.gpa = validated.applicant.gpa
+                    existing.version += 1
+                    uow.applicants.save(existing)
+                except Exception:
+                    applicant_id = None
+
+            if applicant_id is None and resolution.is_new:
+                applicant_id = ApplicantId(uuid4())
+                uow.applicants.add(
+                    Applicant(
+                        id=applicant_id,
+                        name=validated.applicant.name,
+                        email=validated.applicant.email,
+                        phone=validated.applicant.phone,
+                        gpa=validated.applicant.gpa,
+                        created_at=now,
+                        version=1,
+                    )
+                )
+
+            if applicant_id is not None:
+                tag = f"applicant.upserted:{applicant_id}"
+                if tag not in warnings:
+                    warnings.append(tag)
+
+            snapshot = build_extracted_v1_snapshot(extracted, validated)
+            warnings = replace_extracted_v1_warning(warnings, snapshot)
+
+            roommates = snapshot.get("roommates") or []
+            if roommates:
+                pending = "|".join(str(name) for name in roommates)
+                pending_tag = f"pending_roommates:{pending}"
+                warnings = [w for w in warnings if not w.startswith("pending_roommates:")]
+                warnings.append(pending_tag)
+            else:
+                warnings = [w for w in warnings if not w.startswith("pending_roommates:")]
+
+            review_item_id = None
             target = ApplicationStatus.REVIEW_REQUIRED
             if decision.decision == MatchDecisionType.REVIEW_REQUIRED:
-                warnings.append("Matching deferred to human review (Phase 1 scaffold).")
+                warnings.append("Matching deferred to human review — create or attach a group.")
+                review_item_id = ReviewItemId(uuid4())
+                uow.reviews.add(
+                    ReviewItem(
+                        id=review_item_id,
+                        application_id=application_id,
+                        status=ReviewStatus.OPEN,
+                        reason_codes=decision.reason_codes + resolution.reason_codes,
+                        created_at=now,
+                        suggested_group_id=decision.selected_group_id,
+                        evidence_summary=list(decision.reason_codes),
+                    )
+                )
+                application.review_item_id = review_item_id
 
             assert_can_transition(application.id, ApplicationStatus.MATCHING, target)
             application.status = target
@@ -125,13 +199,12 @@ class ProcessApplicationHandler:
             uow.applications.save(application)
             uow.commit()
 
-            # 9. Return a typed result (audit events wired in a later slice).
             return ProcessApplicationResult(
                 application_id=application_id,
                 status=application.status,
-                applicant_id=resolution.applicant_id,
+                applicant_id=applicant_id,
                 group_id=None,
                 group_number=None,
-                review_item_id=None,
+                review_item_id=review_item_id,
                 warnings=tuple(warnings),
             )

@@ -33,6 +33,13 @@ class GroupDetailResponse(BaseModel):
     members: list[GroupMemberResponse] = Field(default_factory=list)
 
 
+class CreateGroupRequest(BaseModel):
+    applicant_id: UUID
+    source_application_id: UUID
+    make_contact: bool = True
+    reason: str = "manual_create"
+
+
 class AddGroupMemberRequest(BaseModel):
     applicant_id: UUID
     source_application_id: UUID | None = None

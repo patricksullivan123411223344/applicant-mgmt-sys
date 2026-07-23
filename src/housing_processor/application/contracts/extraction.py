@@ -26,6 +26,7 @@ class RawDocumentContent(BaseModel):
     tables: list[DocumentTable]
     combined_text: str
     extraction_warnings: list[str] = Field(default_factory=list)
+    source_filename: str | None = None
 
 
 class ExtractedValue[T](BaseModel):

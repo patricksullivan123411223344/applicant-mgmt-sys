@@ -24,6 +24,19 @@ class ResourceNotFoundError(DomainError):
     code = "resource.not_found"
 
 
+class ApplicantInGroupError(DomainError):
+    code = "applicant.in_group"
+
+    def __init__(self, applicant_id: ApplicantId) -> None:
+        super().__init__(
+            "Cannot delete an applicant who is still a member of a housing group. "
+            "Remove them from the group first.",
+            context={"applicant_id": str(applicant_id)},
+            code="applicant.in_group",
+        )
+        self.applicant_id = applicant_id
+
+
 class VersionConflictError(DomainError):
     code = "resource.version_conflict"
 

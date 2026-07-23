@@ -30,9 +30,15 @@ _ALLOWED: dict[ApplicationStatus, frozenset[ApplicationStatus]] = {
         {
             ApplicationStatus.MATCHED,
             ApplicationStatus.DUPLICATE,
+            ApplicationStatus.EXTRACTING,  # reprocess / Process button
         }
     ),
-    ApplicationStatus.MATCHED: frozenset({ApplicationStatus.EXPORTED}),
+    ApplicationStatus.MATCHED: frozenset(
+        {
+            ApplicationStatus.EXPORTED,
+            ApplicationStatus.EXTRACTING,  # reprocess after grouping
+        }
+    ),
     ApplicationStatus.FAILED: frozenset({ApplicationStatus.EXTRACTING}),
     ApplicationStatus.DUPLICATE: frozenset(),
     ApplicationStatus.EXPORTED: frozenset(),

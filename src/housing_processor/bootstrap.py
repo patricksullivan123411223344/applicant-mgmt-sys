@@ -15,10 +15,20 @@ from housing_processor.infrastructure.database.session import (
 )
 from housing_processor.infrastructure.database.unit_of_work import SqlAlchemyUnitOfWorkFactory
 from housing_processor.infrastructure.docx import (
+    DurkinApplicationValidator,
+    DurkinDeterministicParser,
     PassThroughStructuredExtractor,
     PythonDocxDocumentReader,
-    StubApplicationValidator,
-    StubDeterministicParser,
+)
+from housing_processor.application.handlers.export import CreateExcelExportHandler
+from housing_processor.application.handlers.groups import (
+    AddGroupMemberHandler,
+    CreateGroupHandler,
+    SetGroupContactHandler,
+)
+from housing_processor.application.handlers.applicants import (
+    DeleteApplicantHandler,
+    UpsertApplicationApplicantHandler,
 )
 from housing_processor.infrastructure.excel import OpenpyxlExcelRenderer
 from housing_processor.infrastructure.integrations.supabase_client import create_supabase_client
@@ -41,6 +51,12 @@ class AppContainer:
     storage: LocalFileStorage
     ingest_handler: IngestApplicationHandler
     process_handler: ProcessApplicationHandler
+    create_group_handler: CreateGroupHandler
+    add_group_member_handler: AddGroupMemberHandler
+    set_group_contact_handler: SetGroupContactHandler
+    upsert_applicant_handler: UpsertApplicationApplicantHandler
+    delete_applicant_handler: DeleteApplicantHandler
+    excel_export_handler: CreateExcelExportHandler
     excel_renderer: OpenpyxlExcelRenderer
     clock: SystemClock
     id_generator: UuidIdGenerator
@@ -74,9 +90,9 @@ def build_container(settings: Settings | None = None) -> AppContainer:
     process_handler = ProcessApplicationHandler(
         uow_factory=uow_factory,
         document_reader=PythonDocxDocumentReader(),
-        deterministic_parser=StubDeterministicParser(),
+        deterministic_parser=DurkinDeterministicParser(),
         structured_extractor=structured_extractor,
-        validator=StubApplicationValidator(),
+        validator=DurkinApplicationValidator(),
         identity_resolver=StubIdentityResolver(),
         group_matcher=ReviewRequiredGroupMatcher(),
         storage=storage,
@@ -89,6 +105,21 @@ def build_container(settings: Settings | None = None) -> AppContainer:
         storage=storage,
         ingest_handler=ingest_handler,
         process_handler=process_handler,
+        create_group_handler=CreateGroupHandler(uow_factory=uow_factory, clock=clock),
+        add_group_member_handler=AddGroupMemberHandler(uow_factory=uow_factory, clock=clock),
+        set_group_contact_handler=SetGroupContactHandler(uow_factory=uow_factory),
+        upsert_applicant_handler=UpsertApplicationApplicantHandler(
+            uow_factory=uow_factory, clock=clock
+        ),
+        delete_applicant_handler=DeleteApplicantHandler(
+            uow_factory=uow_factory, storage=storage
+        ),
+        excel_export_handler=CreateExcelExportHandler(
+            uow_factory=uow_factory,
+            storage=storage,
+            excel_renderer=OpenpyxlExcelRenderer(),
+            clock=clock,
+        ),
         excel_renderer=OpenpyxlExcelRenderer(),
         clock=clock,
         id_generator=id_generator,

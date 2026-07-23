@@ -34,7 +34,7 @@ function initApplicationsPage() {
       for (const app of items) {
         const tr = document.createElement("tr");
         tr.innerHTML = `
-          <td class="mono">${app.application_id}</td>
+          <td class="mono"><a href="/application.html?id=${app.application_id}">${app.application_id}</a></td>
           <td>${app.original_filename}</td>
           <td>${app.status}${app.review_required ? " · review" : ""}</td>
           <td>${formatDate(app.received_at)}</td>
